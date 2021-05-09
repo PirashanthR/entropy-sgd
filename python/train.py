@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 from timeit import default_timer as timer
 import torch.backends.cudnn as cudnn
-
+from tqdm import tqdm
 import models, loader, optim
 import numpy as np
 from utils import *
@@ -65,7 +65,7 @@ def train(e):
     bsz = opt['b']
     maxb = int(math.ceil(train_loader.n/bsz))
 
-    for bi in range(maxb):
+    for bi in tqdm(range(maxb)):
         def helper():
             def feval():
                 x,y = next(train_loader)
@@ -81,8 +81,8 @@ def train(e):
                 f.backward()
 
                 prec1, = accuracy(yh.data, y.data, topk=(1,))
-                err = 100.-prec1[0]
-                return (f.data[0], err)
+                err = 100.-prec1.item()
+                return (f.data.item(), err)
             return feval
 
         f, err = optimizer.step(helper(), model, criterion)
@@ -140,9 +140,9 @@ def val(e, data_loader):
                 Variable(y.squeeze(), volatile=True)
         yh = model(x)
 
-        f = criterion.forward(yh, y).data[0]
+        f = criterion.forward(yh, y).data.item()
         prec1, = accuracy(yh.data, y.data, topk=(1,))
-        err = 100-prec1[0]
+        err = 100-prec1.item()
 
         fs.update(f, bsz)
         top1.update(err, bsz)
